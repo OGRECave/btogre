@@ -1,0 +1,12 @@
+# Resource locations to be added to the 'boostrap' path
+# This also contains the minimum you need to use the Ogre example framework
+[Bootstrap]
+Zip=@PROJECT_SOURCE_DIR@/demo/data/OgreCore.zip
+
+# Resource locations to be added to the default path
+[General]
+# Bites uses the next entry to discover the platform shaders
+FileSystem=@OGRE_MEDIA_DIR@
+FileSystem=@PROJECT_SOURCE_DIR@/demo/data
+FileSystem=@PROJECT_SOURCE_DIR@/demo/data/Meshes
+FileSystem=@PROJECT_SOURCE_DIR@/demo/data/Textures

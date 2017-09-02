@@ -197,16 +197,19 @@ public:
 		mLineDrawer = new DynamicLines(Ogre::RenderOperation::OT_LINE_LIST);
 		mNode->attachObject(mLineDrawer);
 
-                if (!Ogre::ResourceGroupManager::getSingleton().resourceGroupExists("BtOgre"))
-                    Ogre::ResourceGroupManager::getSingleton().createResourceGroup("BtOgre");
-                if (!Ogre::MaterialManager::getSingleton().resourceExists("BtOgre/DebugLines"))
-                {
-                    Ogre::MaterialPtr mat = Ogre::MaterialManager::getSingleton().create("BtOgre/DebugLines", "BtOgre");
-                    mat->setReceiveShadows(false);
-                    mat->setSelfIllumination(1,1,1);
-                }
+        if (!Ogre::ResourceGroupManager::getSingleton().resourceGroupExists("BtOgre"))
+            Ogre::ResourceGroupManager::getSingleton().createResourceGroup("BtOgre");
 
-		mLineDrawer->setMaterial("BtOgre/DebugLines");
+        Ogre::ResourceManager::ResourceCreateOrRetrieveResult res;
+        res = Ogre::MaterialManager::getSingleton().createOrRetrieve("BtOgre/DebugLines", "BtOgre");
+        Ogre::MaterialPtr mat = Ogre::static_pointer_cast<Ogre::Material>(res.first);
+        if (res.second)
+        {
+            mat->setReceiveShadows(false);
+            mat->setSelfIllumination(1,1,1);
+        }
+
+		mLineDrawer->setMaterial(mat);
 	}
 
 	~DebugDrawer()

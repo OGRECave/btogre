@@ -13,7 +13,8 @@
  * =====================================================================================
  */
 
-#include "ExampleApplication.h"
+#include "OgreApplicationContext.h"
+#include "OgreCameraMan.h"
 #include "BtOgrePG.h"
 #include "BtOgreGP.h"
 #include "BtOgreExtras.h"
@@ -35,47 +36,21 @@ namespace Globals
 
 /*
  * =====================================================================================
- *        Class:  BtOgreTestFrameListener
- *  Description:  Derives from ExampleFrameListener and overrides stuf.
- * =====================================================================================
- */
-
-class BtOgreTestFrameListener : public ExampleFrameListener
-{
-    public:
-	BtOgreTestFrameListener(RenderWindow* win, Camera* cam, SceneManager *sceneMgr)
-	    : ExampleFrameListener(win, cam, false, false)
-	{
-	}
-
-	bool frameStarted(const FrameEvent &evt)
-	{
-	    //Update Bullet world. Don't forget the debugDrawWorld() part!
-	    Globals::phyWorld->stepSimulation(evt.timeSinceLastFrame, 10);
-	    Globals::phyWorld->debugDrawWorld();
-
-	    //Shows debug if F3 key down.
-	    Globals::dbgdraw->setDebugMode(mKeyboard->isKeyDown(OIS::KC_F3));
-	    Globals::dbgdraw->step();
-
-	    return ExampleFrameListener::frameStarted(evt);
-	}
-};
-
-/*
- * =====================================================================================
  *        Class:  BtOgreTestApplication
  *  Description:  Derives from ExampleApplication and overrides stuff.
  * =====================================================================================
  */
 
-class BtOgreTestApplication : public ExampleApplication
+class BtOgreTestApplication : public OgreBites::ApplicationContext, public OgreBites::InputListener
 {
     protected:
 	btAxisSweep3 *mBroadphase;
 	btDefaultCollisionConfiguration *mCollisionConfig;
 	btCollisionDispatcher *mDispatcher;
 	btSequentialImpulseConstraintSolver *mSolver;
+
+	Ogre::SceneManager* mSceneMgr;
+	Ogre::Camera* mCamera;
 
 	Ogre::SceneNode *mNinjaNode;
 	Ogre::Entity *mNinjaEntity;
@@ -86,8 +61,10 @@ class BtOgreTestApplication : public ExampleApplication
 	btRigidBody *mGroundBody;
 	btBvhTriangleMeshShape *mGroundShape;
 
+	OgreBites::CameraMan *mCamMan;
+
     public:
-	BtOgreTestApplication()
+	BtOgreTestApplication() : OgreBites::ApplicationContext("BtOgre", false)
 	{
 	    //Bullet initialisation.
 	    mBroadphase = new btAxisSweep3(btVector3(-10000,-10000,-10000), btVector3(10000,10000,10000), 1024);
@@ -97,9 +74,13 @@ class BtOgreTestApplication : public ExampleApplication
 
 	    Globals::phyWorld = new btDiscreteDynamicsWorld(mDispatcher, mBroadphase, mSolver, mCollisionConfig);
 	    Globals::phyWorld->setGravity(btVector3(0,-9.8,0));
+
+	    addInputListener(this);
 	}
 
-	~BtOgreTestApplication()
+	void setupInput(bool) {}
+
+	void shutdown()
 	{
             //Free rigid bodies
             Globals::phyWorld->removeRigidBody(mNinjaBody);
@@ -121,15 +102,42 @@ class BtOgreTestApplication : public ExampleApplication
 	    delete mDispatcher;
 	    delete mCollisionConfig;
 	    delete mBroadphase;
+
+	    OgreBites::ApplicationContext::shutdown();
 	}
 
-    protected:
-	void createScene(void)
+	void setup(void)
 	{
+	    OgreBites::ApplicationContext::setup();
+
+	    mSceneMgr = getRoot()->createSceneManager(Ogre::ST_GENERIC);
+
+	    // register our scene with the RTSS
+	    Ogre::RTShader::ShaderGenerator* shadergen = Ogre::RTShader::ShaderGenerator::getSingletonPtr();
+	    shadergen->addSceneManager(mSceneMgr);
+
+	    // without light we would just get a black screen
+        Ogre::Light* light = mSceneMgr->createLight("MainLight");
+        Ogre::SceneNode* lightNode = mSceneMgr->getRootSceneNode()->createChildSceneNode();
+        lightNode->setPosition(0, 10, 15);
+        lightNode->attachObject(light);
+
+	    // create the camera
+	    mCamera = mSceneMgr->createCamera("myCam");
+	    Ogre::SceneNode* camnode = mSceneMgr->getRootSceneNode()->createChildSceneNode();
+	    camnode->attachObject(mCamera);
+
+	    // and tell it to render into the main window
+	    getRenderWindow()->addViewport(mCamera);
+
+	    mCamMan = new OgreBites::CameraMan(camnode);
+	    mCamMan->setStyle(OgreBites::CS_ORBIT);
+	    mCamMan->setYawPitchDist(Ogre::Degree(45), Ogre::Degree(45), 20);
+	    addInputListener(mCamMan);
+
 	    //Some normal stuff.
 	    mSceneMgr->setAmbientLight(ColourValue(0.7,0.7,0.7));
-	    mCamera->setPosition(Vector3(10,10,10));
-	    mCamera->lookAt(Vector3::ZERO);
+
 	    mCamera->setNearClipDistance(0.05);
 	    LogManager::getSingleton().setLogDetail(LL_BOREME);
 
@@ -193,11 +201,34 @@ class BtOgreTestApplication : public ExampleApplication
 	    Globals::phyWorld->addRigidBody(mGroundBody);
 	}
 
-	void createFrameListener(void)
+	bool keyPressed(const OgreBites::KeyboardEvent& evt)
 	{
-	    mFrameListener = new BtOgreTestFrameListener(mWindow, mCamera, mSceneMgr);
-	    mRoot->addFrameListener(mFrameListener);
+	    if (evt.keysym.sym == SDLK_ESCAPE)
+	    {
+	        getRoot()->queueEndRendering();
+	    }
+	    else if(evt.keysym.sym == SDLK_F3) {
+	        static bool draw = true;
+	        draw = !draw;
+	        Globals::dbgdraw->setDebugMode(draw);
+	    }
+	    return true;
 	}
+
+    bool frameStarted(const FrameEvent &evt)
+    {
+        OgreBites::ApplicationContext::frameStarted(evt);
+
+        //Update Bullet world. Don't forget the debugDrawWorld() part!
+        Globals::phyWorld->stepSimulation(evt.timeSinceLastFrame, 10);
+        Globals::phyWorld->debugDrawWorld();
+
+        //Shows debug if F3 key down.
+
+        Globals::dbgdraw->step();
+
+        return true;
+    }
 };
 
 /*
@@ -218,20 +249,9 @@ int main(int argc, char **argv)
 {
     // Create application object
     BtOgreTestApplication app;
-
-    try 
-    {
-	app.go();
-    } 
-    catch( Exception& e ) 
-    {
-#if OGRE_PLATFORM == OGRE_PLATFORM_WIN32
-	MessageBox( NULL, e.what(), "An exception has occurred!", MB_OK | MB_ICONERROR | MB_TASKMODAL);
-#else
-	fprintf(stderr, "An exception has occurred: %s\n",
-		e.what());
-#endif
-    }
+    app.initApp();
+    app.getRoot()->startRendering();
+    app.closeApp();
 
     return 0;
 }
