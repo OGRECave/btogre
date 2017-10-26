@@ -74,8 +74,6 @@ class BtOgreTestApplication : public OgreBites::ApplicationContext, public OgreB
 
 	    Globals::phyWorld = new btDiscreteDynamicsWorld(mDispatcher, mBroadphase, mSolver, mCollisionConfig);
 	    Globals::phyWorld->setGravity(btVector3(0,-9.8,0));
-
-	    addInputListener(this);
 	}
 
 	void setupInput(bool) {}
@@ -109,8 +107,9 @@ class BtOgreTestApplication : public OgreBites::ApplicationContext, public OgreB
 	void setup(void)
 	{
 	    OgreBites::ApplicationContext::setup();
+	    addInputListener(this);
 
-	    mSceneMgr = getRoot()->createSceneManager(Ogre::ST_GENERIC);
+	    mSceneMgr = getRoot()->createSceneManager();
 
 	    // register our scene with the RTSS
 	    Ogre::RTShader::ShaderGenerator* shadergen = Ogre::RTShader::ShaderGenerator::getSingletonPtr();
@@ -124,6 +123,8 @@ class BtOgreTestApplication : public OgreBites::ApplicationContext, public OgreB
 
 	    // create the camera
 	    mCamera = mSceneMgr->createCamera("myCam");
+	    mCamera->setAutoAspectRatio(true);
+
 	    Ogre::SceneNode* camnode = mSceneMgr->getRootSceneNode()->createChildSceneNode();
 	    camnode->attachObject(mCamera);
 

@@ -214,7 +214,7 @@ public:
 
 	~DebugDrawer()
 	{
-                Ogre::MaterialManager::getSingleton().remove("BtOgre/DebugLines");
+                Ogre::MaterialManager::getSingleton().remove("BtOgre/DebugLines", "BtOgre");
                 Ogre::ResourceGroupManager::getSingleton().destroyResourceGroup("BtOgre");
 		delete mLineDrawer;
 	}
