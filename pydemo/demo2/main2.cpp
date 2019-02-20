@@ -15,24 +15,11 @@
 
 #include "OgreApplicationContext.h"
 #include "OgreCameraMan.h"
-#include "BtOgrePG.h"
-#include "BtOgreGP.h"
-#include "BtOgreExtras.h"
+#include "btOgreLayer.h"
+#include <iostream>
+using namespace std;
 
 using namespace Ogre;
-
-/*
- * =====================================================================================
- *    Namespace:  Globals
- *  Description:  A dirty 'globals' hack.
- * =====================================================================================
- */
-
-namespace Globals
-{
-    btDynamicsWorld *phyWorld;
-    BtOgre::DebugDrawer *dbgdraw;
-}
 
 /*
  * =====================================================================================
@@ -44,63 +31,33 @@ namespace Globals
 class BtOgreTestApplication : public OgreBites::ApplicationContext, public OgreBites::InputListener
 {
     protected:
-	btAxisSweep3 *mBroadphase;
-	btDefaultCollisionConfiguration *mCollisionConfig;
-	btCollisionDispatcher *mDispatcher;
-	btSequentialImpulseConstraintSolver *mSolver;
 
 	Ogre::SceneManager* mSceneMgr;
 	Ogre::Camera* mCamera;
 
 	Ogre::SceneNode *mNinjaNode;
 	Ogre::Entity *mNinjaEntity;
-	btRigidBody *mNinjaBody;
-	btCollisionShape *mNinjaShape;
+	Ogre::SceneNode* mNinjaBtNode;
 
 	Ogre::Entity *mGroundEntity;
-	btRigidBody *mGroundBody;
-	btBvhTriangleMeshShape *mGroundShape;
 
 	OgreBites::CameraMan *mCamMan;
+	
 
     public:
+	btOgreLayer *layer;
+
 	BtOgreTestApplication() : OgreBites::ApplicationContext("BtOgre")
 	{
-	    //Bullet initialisation.
-	    mBroadphase = new btAxisSweep3(btVector3(-10000,-10000,-10000), btVector3(10000,10000,10000), 1024);
-	    mCollisionConfig = new btDefaultCollisionConfiguration();
-	    mDispatcher = new btCollisionDispatcher(mCollisionConfig);
-	    mSolver = new btSequentialImpulseConstraintSolver();
-
-	    Globals::phyWorld = new btDiscreteDynamicsWorld(mDispatcher, mBroadphase, mSolver, mCollisionConfig);
-	    Globals::phyWorld->setGravity(btVector3(0,-9.8,0));
+		layer = new btOgreLayer();
+		layer->initWorld();
 	}
 
 	void setupInput(bool) {}
 
 	void shutdown()
 	{
-            //Free rigid bodies
-            Globals::phyWorld->removeRigidBody(mNinjaBody);
-            delete mNinjaBody->getMotionState();
-            delete mNinjaBody;
-            delete mNinjaShape;
-
-            Globals::phyWorld->removeRigidBody(mGroundBody);
-            delete mGroundBody->getMotionState();
-            delete mGroundBody;
-            delete mGroundShape->getMeshInterface();
-            delete mGroundShape;
-
-	    //Free Bullet stuff.
-            delete Globals::dbgdraw;
-            delete Globals::phyWorld;
-
-	    delete mSolver;
-	    delete mDispatcher;
-	    delete mCollisionConfig;
-	    delete mBroadphase;
-
+		layer->destoryWorld();
 	    OgreBites::ApplicationContext::shutdown();
 	}
 
@@ -146,60 +103,39 @@ class BtOgreTestApplication : public OgreBites::ApplicationContext, public OgreB
 	    // Debug drawing!
 	    //----------------------------------------------------------
 
-	    Globals::dbgdraw = new BtOgre::DebugDrawer(mSceneMgr->getRootSceneNode(), Globals::phyWorld);
-	    Globals::phyWorld->setDebugDrawer(Globals::dbgdraw);
+		layer->debugDrawer(mSceneMgr->getRootSceneNode());
 
 	    //----------------------------------------------------------
 	    // Ninja!
 	    //----------------------------------------------------------
 
-	    Vector3 pos = Vector3(0,10,0);
+	    Ogre::Vector3 pos = Vector3(0,500,0);
 	    Quaternion rot = Quaternion::IDENTITY;
 
 	    //Create Ogre stuff.
 
-	    mNinjaEntity = mSceneMgr->createEntity("ninjaEntity", "Player.mesh");
-	    mNinjaNode = mSceneMgr->getRootSceneNode()->createChildSceneNode("ninjaSceneNode", pos, rot);
-	    mNinjaNode->attachObject(mNinjaEntity);
+	    mNinjaEntity = mSceneMgr->createEntity("ninjaEntity", "ninja.mesh");
+		mNinjaBtNode= mSceneMgr->getRootSceneNode()->createChildSceneNode("ninjaBtNode", pos, rot);
 
-	    //Create shape.
-	    BtOgre::StaticMeshToShapeConverter converter(mNinjaEntity);
-	    mNinjaShape = converter.createSphere();
+		
+		mNinjaNode = mNinjaBtNode->createChildSceneNode("ninjaSceneNode", Vector3(0, -mNinjaEntity->getBoundingRadius()/2,0), rot);
+		mNinjaNode->attachObject(mNinjaEntity);
 
-	    //Calculate inertia.
-	    btScalar mass = 5;
-	    btVector3 inertia;
-	    mNinjaShape->calculateLocalInertia(mass, inertia);
-
-	    //Create BtOgre MotionState (connects Ogre and Bullet).
-	    BtOgre::RigidBodyState *ninjaState = new BtOgre::RigidBodyState(mNinjaNode);
-
-	    //Create the Body.
-	    mNinjaBody = new btRigidBody(mass, ninjaState, mNinjaShape, inertia);
-	    Globals::phyWorld->addRigidBody(mNinjaBody);
-
+		layer->addRigidToWorld(mNinjaEntity, mNinjaBtNode);
 	    //----------------------------------------------------------
 	    // Ground!
 	    //----------------------------------------------------------
 
 	    //Create Ogre stuff.
-	    //MeshManager::getSingleton().createPlane("groundPlane", "General", Plane(Vector3::UNIT_Y, 0), 100, 100, 
-	    //10, 10, true, 1, 5, 5, Vector3::UNIT_Z);
-	    mGroundEntity = mSceneMgr->createEntity("groundEntity", "TestLevel_b0.mesh");
-	    //mGroundEntity->setMaterialName("Examples/Rockwall");
+	    MeshManager::getSingleton().createPlane("groundPlane", "General", Plane(Vector3(0,1,0), 0), 100, 100, 
+			10, 10, true, 1, 5, 5, Ogre::Vector3::UNIT_Z);
+		//10, 10, true, 1, 5, 5, Vector3(0,0,1));
+			
+	    mGroundEntity = mSceneMgr->createEntity("groundEntity", "groundPlane");
+	    mGroundEntity->setMaterialName("Examples/Rockwall");
 	    mSceneMgr->getRootSceneNode()->createChildSceneNode("groundNode")->attachObject(mGroundEntity);
 
-	    //Create the ground shape.
-	    BtOgre::StaticMeshToShapeConverter converter2(mGroundEntity);
-	    mGroundShape = converter2.createTrimesh();
-
-	    //Create MotionState (no need for BtOgre here, you can use it if you want to though).
-	    btDefaultMotionState* groundState = new btDefaultMotionState(
-		    btTransform(btQuaternion(0,0,0,1),btVector3(0,0,0)));
-
-	    //Create the Body.
-	    mGroundBody = new btRigidBody(0, groundState, mGroundShape, btVector3(0,0,0));
-	    Globals::phyWorld->addRigidBody(mGroundBody);
+		layer->addGroundToWorld(mGroundEntity);
 	}
 
 	bool keyPressed(const OgreBites::KeyboardEvent& evt)
@@ -213,7 +149,7 @@ class BtOgreTestApplication : public OgreBites::ApplicationContext, public OgreB
 	    else if(evt.keysym.sym == SDLK_F3) {
 	        static bool draw = true;
 	        draw = !draw;
-	        Globals::dbgdraw->setDebugMode(draw);
+	        //Globals::dbgdraw->setDebugMode(draw);
 	    }
 	    return true;
 	}
@@ -223,13 +159,10 @@ class BtOgreTestApplication : public OgreBites::ApplicationContext, public OgreB
         OgreBites::ApplicationContext::frameStarted(evt);
 
         //Update Bullet world. Don't forget the debugDrawWorld() part!
-        Globals::phyWorld->stepSimulation(evt.timeSinceLastFrame, 10);
-        Globals::phyWorld->debugDrawWorld();
-
-        //Shows debug if F3 key down.
-
-        Globals::dbgdraw->step();
-
+		layer->step(evt);
+		Vector3 v = mNinjaNode->_getDerivedPosition();
+		Vector3 v2 = mNinjaBtNode->_getDerivedPosition();
+		cout << v[0] << "," << v[1] << "," << v[2] <<"\t"<<v2[0]<<" "<<v2[1]<<" "<<v2[2]<<endl;
         return true;
     }
 };
@@ -241,14 +174,9 @@ class BtOgreTestApplication : public OgreBites::ApplicationContext, public OgreB
  * =====================================================================================
  */
 
-#if OGRE_PLATFORM == OGRE_PLATFORM_WIN32
-#define WIN32_LEAN_AND_MEAN
-#include "windows.h"
+ //! [main]
+int main(int argc, char *argv[])
 
-INT WINAPI WinMain( HINSTANCE hInst, HINSTANCE, LPSTR strCmdLine, INT )
-#else
-int main(int argc, char **argv)
-#endif
 {
     // Create application object
     BtOgreTestApplication app;
