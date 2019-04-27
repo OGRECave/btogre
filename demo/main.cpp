@@ -64,7 +64,7 @@ class BtOgreTestApplication : public OgreBites::ApplicationContext, public OgreB
 	OgreBites::CameraMan *mCamMan;
 
     public:
-	BtOgreTestApplication() : OgreBites::ApplicationContext("BtOgre", false)
+	BtOgreTestApplication() : OgreBites::ApplicationContext("BtOgre")
 	{
 	    //Bullet initialisation.
 	    mBroadphase = new btAxisSweep3(btVector3(-10000,-10000,-10000), btVector3(10000,10000,10000), 1024);
@@ -183,7 +183,7 @@ class BtOgreTestApplication : public OgreBites::ApplicationContext, public OgreB
 	    //----------------------------------------------------------
 
 	    //Create Ogre stuff.
-	    //MeshManager::getSingleton().createPlane("groundPlane", "General", Plane(Vector3::UNIT_Y, 0), 100, 100, 
+	    //MeshManager::getSingleton().createPlane("groundPlane", "General", Plane(Vector3::UNIT_Y, 0), 100, 100,
 	    //10, 10, true, 1, 5, 5, Vector3::UNIT_Z);
 	    mGroundEntity = mSceneMgr->createEntity("groundEntity", "TestLevel_b0.mesh");
 	    //mGroundEntity->setMaterialName("Examples/Rockwall");
