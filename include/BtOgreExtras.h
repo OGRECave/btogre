@@ -54,23 +54,21 @@ class DebugDrawer : public btIDebugDraw
 {
 	Ogre::SceneNode *mNode;
 	btDynamicsWorld *mWorld;
-	bool mDebugOn;
-    Ogre::ManualObject mLines;
 
+    Ogre::ManualObject mLines;
+	int mDebugMode;
 public:
     DebugDrawer(Ogre::SceneNode* node, btDynamicsWorld* world)
-        : mNode(node), mWorld(world), mDebugOn(true), mLines("")
+        : mNode(node), mWorld(world), mLines(""), mDebugMode(DBG_DrawWireframe)
     {
         mNode->attachObject(&mLines);
+		mWorld->setDebugDrawer(this);
     }
 
-    void step()
+    void update()
     {
-		if (mDebugOn)
-		{
-			mWorld->debugDrawWorld();
-            mLines.end();
-		}
+		mWorld->debugDrawWorld();
+		mLines.end();
 	}
 
 	void drawLine(const btVector3& from,const btVector3& to,const btVector3& color);
@@ -89,21 +87,17 @@ public:
 	{
 	}
 
-	//0 for off, anything else for on.
-	void setDebugMode(int isOn)
+	void setDebugMode(int mode)
 	{
-		mDebugOn = (isOn == 0) ? false : true;
+		mDebugMode = mode;
 
-		if (!mDebugOn)
-			mLines.clear();
+		if (mDebugMode == DBG_NoDebug)
+			clear();
 	}
 
-	//0 for off, anything else for on.
-	int	getDebugMode() const
-	{
-		return mDebugOn;
-	}
+	void clear() { mLines.clear(); }
 
+	int getDebugMode() const { return mDebugMode; }
 };
 
 }
