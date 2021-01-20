@@ -163,8 +163,7 @@ class BtOgreTestApplication : public OgreBites::ApplicationContext, public OgreB
 	    mNinjaNode->attachObject(mNinjaEntity);
 
 	    //Create shape.
-	    BtOgre::StaticMeshToShapeConverter converter(mNinjaEntity);
-	    mNinjaShape = converter.createSphere();
+	    mNinjaShape = BtOgre::createSphereCollider(mNinjaEntity);
 
 	    //Calculate inertia.
 	    btScalar mass = 5;
@@ -190,8 +189,7 @@ class BtOgreTestApplication : public OgreBites::ApplicationContext, public OgreB
 	    mSceneMgr->getRootSceneNode()->createChildSceneNode("groundNode")->attachObject(mGroundEntity);
 
 	    //Create the ground shape.
-	    BtOgre::StaticMeshToShapeConverter converter2(mGroundEntity);
-	    mGroundShape = converter2.createTrimesh();
+	    mGroundShape = BtOgre::StaticMeshToShapeConverter(mGroundEntity).createTrimesh();
 
 	    //Create MotionState (no need for BtOgre here, you can use it if you want to though).
 	    btDefaultMotionState* groundState = new btDefaultMotionState(

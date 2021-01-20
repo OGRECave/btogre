@@ -26,6 +26,11 @@ namespace BtOgre {
 typedef std::map<unsigned char, Vector3Array*> BoneIndex;
 typedef std::pair<unsigned short, Vector3Array*> BoneKeyIndex;
 
+/// create sphere collider using ogre provided data
+btSphereShape* createSphereCollider(const Ogre::MovableObject* mo);
+/// create box collider using ogre provided data
+btBoxShape* createBoxCollider(const Ogre::MovableObject* mo);
+
 class VertexIndexToShape
 {
 public:

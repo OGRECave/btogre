@@ -25,6 +25,25 @@ using namespace Ogre;
 
 namespace BtOgre {
 
+btSphereShape* createSphereCollider(const Ogre::MovableObject* mo)
+{
+	OgreAssert(mo->getParentSceneNode(), "MovableObject must be attached");
+
+	auto shape = new btSphereShape(mo->getBoundingRadius());
+	shape->setLocalScaling(Convert::toBullet(mo->getParentSceneNode()->getScale()));
+
+	return shape;
+}
+btBoxShape* createBoxCollider(const Ogre::MovableObject* mo)
+{
+	OgreAssert(mo->getParentSceneNode(), "MovableObject must be attached");
+
+	auto shape = new btBoxShape(Convert::toBullet(mo->getBoundingBox().getHalfSize()));
+	shape->setLocalScaling(Convert::toBullet(mo->getParentSceneNode()->getScale()));
+
+	return shape;
+}
+
 /*
  * =============================================================================================
  * BtOgre::VertexIndexToShape
