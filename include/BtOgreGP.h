@@ -31,6 +31,44 @@ btSphereShape* createSphereCollider(const Ogre::MovableObject* mo);
 /// create box collider using ogre provided data
 btBoxShape* createBoxCollider(const Ogre::MovableObject* mo);
 
+enum ColliderType
+{
+	CT_BOX,
+	CT_SPHERE,
+	CT_TRIMESH,
+	CT_HULL
+};
+
+/// wrapper with automatic memory management
+class RigidBody
+{
+	btRigidBody* mBtBody;
+	btDynamicsWorld* mBtWorld;
+public:
+    RigidBody(btRigidBody* btBody, btDynamicsWorld* btWorld) : mBtBody(btBody), mBtWorld(btWorld) {}
+	~RigidBody();
+
+	btRigidBody* getBtBody() const { return mBtBody; }
+};
+
+/// simplified wrapper with automatic memory management
+class DynamicsWorld
+{
+	std::unique_ptr<btCollisionConfiguration> mCollisionConfig;
+	std::unique_ptr<btCollisionDispatcher> mDispatcher;
+	std::unique_ptr<btConstraintSolver> mSolver;
+	std::unique_ptr<btBroadphaseInterface> mBroadphase;
+    btDynamicsWorld* mBtWorld;
+public:
+	explicit DynamicsWorld(const Ogre::Vector3& gravity);
+	~DynamicsWorld();
+	DynamicsWorld(btDynamicsWorld* btWorld) : mBtWorld(btWorld) {}
+
+	btRigidBody* addRigidBody(float mass, const Ogre::Entity* ent, ColliderType ct);
+
+	btDynamicsWorld* getBtWorld() const { return mBtWorld; }
+};
+
 class VertexIndexToShape
 {
 public:

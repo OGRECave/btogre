@@ -30,72 +30,31 @@ using namespace Ogre;
 
 class BtOgreTestApplication : public OgreBites::ApplicationContext, public OgreBites::InputListener
 {
-    protected:
-	btAxisSweep3 *mBroadphase;
-	btDefaultCollisionConfiguration *mCollisionConfig;
-	btCollisionDispatcher *mDispatcher;
-	btSequentialImpulseConstraintSolver *mSolver;
-
-    btDynamicsWorld *mBtWorld;
+    std::unique_ptr<BtOgre::DynamicsWorld> mDynWorld;
 
 	Ogre::SceneManager* mSceneMgr;
 	Ogre::Camera* mCamera;
 
 	Ogre::SceneNode *mNinjaNode;
 	Ogre::Entity *mNinjaEntity;
-	btRigidBody *mNinjaBody;
-	btCollisionShape *mNinjaShape;
-
 	Ogre::Entity *mGroundEntity;
-	btRigidBody *mGroundBody;
-	btBvhTriangleMeshShape *mGroundShape;
 
 	OgreBites::CameraMan *mCamMan;
 
 	bool mDebugOn;
-    BtOgre::DebugDrawer *mDbgDraw;
+    std::unique_ptr<BtOgre::DebugDrawer> mDbgDraw;
 
     public:
 	BtOgreTestApplication() : OgreBites::ApplicationContext("BtOgre")
 	{
-	    //Bullet initialisation.
-	    mBroadphase = new btAxisSweep3(btVector3(-10000,-10000,-10000), btVector3(10000,10000,10000), 1024);
-	    mCollisionConfig = new btDefaultCollisionConfiguration();
-	    mDispatcher = new btCollisionDispatcher(mCollisionConfig);
-	    mSolver = new btSequentialImpulseConstraintSolver();
-
-	    mBtWorld = new btDiscreteDynamicsWorld(mDispatcher, mBroadphase, mSolver, mCollisionConfig);
-	    mBtWorld->setGravity(btVector3(0,-9.8,0));
-
+        mDynWorld.reset(new BtOgre::DynamicsWorld(Ogre::Vector3(0,-9.8,0)));
 		mDebugOn = true;
 	}
 
-	void setupInput(bool) {}
-
 	void shutdown()
 	{
-            //Free rigid bodies
-            mBtWorld->removeRigidBody(mNinjaBody);
-            delete mNinjaBody->getMotionState();
-            delete mNinjaBody;
-            delete mNinjaShape;
-
-            mBtWorld->removeRigidBody(mGroundBody);
-            delete mGroundBody->getMotionState();
-            delete mGroundBody;
-            delete mGroundShape->getMeshInterface();
-            delete mGroundShape;
-
-	    //Free Bullet stuff.
-            delete mDbgDraw;
-            delete mBtWorld;
-
-	    delete mSolver;
-	    delete mDispatcher;
-	    delete mCollisionConfig;
-	    delete mBroadphase;
-
-	    OgreBites::ApplicationContext::shutdown();
+		OgreBites::ApplicationContext::shutdown();
+        mDbgDraw->clear();
 	}
 
 	void setup(void)
@@ -140,7 +99,7 @@ class BtOgreTestApplication : public OgreBites::ApplicationContext, public OgreB
 	    // Debug drawing!
 	    //----------------------------------------------------------
 
-	    mDbgDraw = new BtOgre::DebugDrawer(mSceneMgr->getRootSceneNode(), mBtWorld);
+	    mDbgDraw.reset(new BtOgre::DebugDrawer(mSceneMgr->getRootSceneNode(), mDynWorld->getBtWorld()));
 
 	    //----------------------------------------------------------
 	    // Ninja!
@@ -151,20 +110,8 @@ class BtOgreTestApplication : public OgreBites::ApplicationContext, public OgreB
 	    mNinjaNode = mSceneMgr->getRootSceneNode()->createChildSceneNode(Vector3(0,10,0));
 	    mNinjaNode->attachObject(mNinjaEntity);
 
-	    //Create shape.
-	    mNinjaShape = BtOgre::createSphereCollider(mNinjaEntity);
-
-	    //Calculate inertia.
-	    btScalar mass = 5;
-	    btVector3 inertia;
-	    mNinjaShape->calculateLocalInertia(mass, inertia);
-
-	    //Create BtOgre MotionState (connects Ogre and Bullet).
-	    BtOgre::RigidBodyState *ninjaState = new BtOgre::RigidBodyState(mNinjaNode);
-
 	    //Create the Body.
-	    mNinjaBody = new btRigidBody(mass, ninjaState, mNinjaShape, inertia);
-	    mBtWorld->addRigidBody(mNinjaBody);
+        mDynWorld->addRigidBody(5, mNinjaEntity, BtOgre::CT_SPHERE);
 
 	    //----------------------------------------------------------
 	    // Ground!
@@ -174,16 +121,8 @@ class BtOgreTestApplication : public OgreBites::ApplicationContext, public OgreB
 	    mGroundEntity = mSceneMgr->createEntity("groundEntity", "TestLevel_b0.mesh");
 	    mSceneMgr->getRootSceneNode()->createChildSceneNode("groundNode")->attachObject(mGroundEntity);
 
-	    //Create the ground shape.
-	    mGroundShape = BtOgre::StaticMeshToShapeConverter(mGroundEntity).createTrimesh();
-
-	    //Create MotionState (no need for BtOgre here, you can use it if you want to though).
-	    btDefaultMotionState* groundState = new btDefaultMotionState(
-		    btTransform(btQuaternion(0,0,0,1),btVector3(0,0,0)));
-
 	    //Create the Body.
-	    mGroundBody = new btRigidBody(0, groundState, mGroundShape, btVector3(0,0,0));
-	    mBtWorld->addRigidBody(mGroundBody);
+        mDynWorld->addRigidBody(0, mGroundEntity, BtOgre::CT_TRIMESH);
 	}
 
 	bool keyPressed(const OgreBites::KeyboardEvent& evt)
@@ -209,7 +148,7 @@ class BtOgreTestApplication : public OgreBites::ApplicationContext, public OgreB
         OgreBites::ApplicationContext::frameStarted(evt);
 
         //Update Bullet world. Don't forget the debugDrawWorld() part!
-        mBtWorld->stepSimulation(evt.timeSinceLastFrame, 10);
+        mDynWorld->getBtWorld()->stepSimulation(evt.timeSinceLastFrame, 10);
 
         if(mDebugOn)
         	mDbgDraw->update();

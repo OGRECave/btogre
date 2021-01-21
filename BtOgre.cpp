@@ -44,6 +44,68 @@ btBoxShape* createBoxCollider(const Ogre::MovableObject* mo)
 	return shape;
 }
 
+DynamicsWorld::DynamicsWorld(const Ogre::Vector3& gravity)
+{
+	//Bullet initialisation.
+	mCollisionConfig.reset(new btDefaultCollisionConfiguration());
+	mDispatcher.reset(new btCollisionDispatcher(mCollisionConfig.get()));
+	mSolver.reset(new btSequentialImpulseConstraintSolver());
+	mBroadphase.reset(new btDbvtBroadphase());
+
+	mBtWorld = new btDiscreteDynamicsWorld(mDispatcher.get(), mBroadphase.get(), mSolver.get(),
+											mCollisionConfig.get());
+	mBtWorld->setGravity(Convert::toBullet(gravity));
+}
+
+btRigidBody* DynamicsWorld::addRigidBody(float mass, const Ogre::Entity* ent, ColliderType ct)
+{
+    auto node = ent->getParentSceneNode();
+    RigidBodyState* state = new RigidBodyState(node);
+
+    btCollisionShape* cs = NULL;
+    switch (ct)
+    {
+    case CT_BOX:
+        cs = createBoxCollider(ent);
+        break;
+    case CT_SPHERE:
+        cs = createSphereCollider(ent);
+        break;
+    case CT_TRIMESH:
+        cs = StaticMeshToShapeConverter(ent).createTrimesh();
+        break;
+    case CT_HULL:
+        cs = StaticMeshToShapeConverter(ent).createConvex();
+        break;
+    }
+
+    btVector3 inertia(0, 0, 0);
+    if(mass != 0) // mass = 0 -> static
+        cs->calculateLocalInertia(mass, inertia);
+    
+    auto rb = new btRigidBody(mass, state, cs, inertia);
+    mBtWorld->addRigidBody(rb);
+
+    // transfer ownership to node
+    auto bodyWrapper = std::make_shared<RigidBody>(rb, mBtWorld);
+    node->getUserObjectBindings().setUserAny("BtRigidBody", bodyWrapper);
+
+	return rb;
+}
+
+DynamicsWorld::~DynamicsWorld()
+{
+    delete mBtWorld;
+}
+
+RigidBody::~RigidBody()
+{
+    mBtWorld->removeRigidBody(mBtBody);
+    delete mBtBody->getMotionState();
+    delete mBtBody->getCollisionShape();
+    delete mBtBody;
+}
+
 /*
  * =============================================================================================
  * BtOgre::VertexIndexToShape
