@@ -86,19 +86,19 @@ class StaticMeshToShapeConverter : public VertexIndexToShape
 public:
 
 	StaticMeshToShapeConverter(Ogre::Renderable *rend, const Ogre::Matrix4 &transform = Ogre::Matrix4::IDENTITY);
-	StaticMeshToShapeConverter(Ogre::Entity *entity,   const Ogre::Matrix4 &transform = Ogre::Matrix4::IDENTITY);
+	StaticMeshToShapeConverter(const Ogre::Entity *entity,   const Ogre::Matrix4 &transform = Ogre::Matrix4::IDENTITY);
 	StaticMeshToShapeConverter();
 
 	~StaticMeshToShapeConverter();
 
-	void addEntity(Ogre::Entity *entity,const Ogre::Matrix4 &transform = Ogre::Matrix4::IDENTITY);
+	void addEntity(const Ogre::Entity *entity,const Ogre::Matrix4 &transform = Ogre::Matrix4::IDENTITY);
 
 	void addMesh(const Ogre::MeshPtr &mesh, const Ogre::Matrix4 &transform = Ogre::Matrix4::IDENTITY);
 
 
 protected:
 
-	Ogre::Entity*		mEntity;
+	const Ogre::Entity* mEntity;
 	Ogre::SceneNode*	mNode;
 };
 

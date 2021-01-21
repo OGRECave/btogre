@@ -458,7 +458,7 @@ btBoxShape* createBoxCollider(const Ogre::MovableObject* mo)
 	{
 	}
 	//------------------------------------------------------------------------------------------------
-	StaticMeshToShapeConverter::StaticMeshToShapeConverter(Entity *entity,  const Matrix4 &transform) :
+	StaticMeshToShapeConverter::StaticMeshToShapeConverter(const Entity *entity,  const Matrix4 &transform) :
 		VertexIndexToShape(transform),
 		mEntity (0),
 		mNode (0)
@@ -479,7 +479,7 @@ btBoxShape* createBoxCollider(const Ogre::MovableObject* mo)
 
 	}
 	//------------------------------------------------------------------------------------------------
-	void StaticMeshToShapeConverter::addEntity(Entity *entity,const Matrix4 &transform)
+	void StaticMeshToShapeConverter::addEntity(const Entity *entity,const Matrix4 &transform)
 	{
 		// Each entity added need to reset size and radius
 		// next time getRadius and getSize are asked, they're computed.
