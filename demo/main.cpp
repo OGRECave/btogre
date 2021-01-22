@@ -15,9 +15,7 @@
 
 #include "OgreApplicationContext.h"
 #include "OgreCameraMan.h"
-#include "BtOgrePG.h"
-#include "BtOgreGP.h"
-#include "BtOgreExtras.h"
+#include "BtOgre.h"
 
 using namespace Ogre;
 

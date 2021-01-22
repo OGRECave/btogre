@@ -13,17 +13,13 @@
  * =============================================================================================
  */
 
-#include "BtOgrePG.h"
-#include "BtOgreGP.h"
-#include "BtOgreExtras.h"
-
-#include "OgreMaterialManager.h"
-#include "OgreTechnique.h"
-#include "OgrePass.h"
+#include "BtOgre.h"
 
 using namespace Ogre;
 
 namespace BtOgre {
+
+typedef std::pair<unsigned short, Vector3Array*> BoneKeyIndex;
 
 btSphereShape* createSphereCollider(const Ogre::MovableObject* mo)
 {
