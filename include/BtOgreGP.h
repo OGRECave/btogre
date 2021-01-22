@@ -39,16 +39,10 @@ enum ColliderType
 	CT_HULL
 };
 
-/// wrapper with automatic memory management
-class RigidBody
+struct CollisionListener
 {
-	btRigidBody* mBtBody;
-	btDynamicsWorld* mBtWorld;
-public:
-    RigidBody(btRigidBody* btBody, btDynamicsWorld* btWorld) : mBtBody(btBody), mBtWorld(btWorld) {}
-	~RigidBody();
-
-	btRigidBody* getBtBody() const { return mBtBody; }
+	virtual ~CollisionListener() {}
+    virtual void contact(const Ogre::MovableObject* other, const btManifoldPoint& manifoldPoint) = 0;
 };
 
 /// simplified wrapper with automatic memory management
@@ -64,7 +58,7 @@ public:
 	~DynamicsWorld();
 	DynamicsWorld(btDynamicsWorld* btWorld) : mBtWorld(btWorld) {}
 
-	btRigidBody* addRigidBody(float mass, const Ogre::Entity* ent, ColliderType ct);
+	btRigidBody* addRigidBody(float mass, const Ogre::Entity* ent, ColliderType ct, CollisionListener* listener = 0);
 
 	btDynamicsWorld* getBtWorld() const { return mBtWorld; }
 };

@@ -44,6 +44,51 @@ btBoxShape* createBoxCollider(const Ogre::MovableObject* mo)
 	return shape;
 }
 
+struct EntityCollisionListener
+{
+	const Ogre::MovableObject* entity;
+	CollisionListener* listener;
+};
+
+static void onTick(btDynamicsWorld* world, btScalar timeStep)
+{
+	int numManifolds = world->getDispatcher()->getNumManifolds();
+	auto manifolds = world->getDispatcher()->getInternalManifoldPointer();
+    for (int i = 0; i < numManifolds; i++) {
+        btPersistentManifold* manifold = manifolds[i];
+
+        for (int j = 0; j < manifold->getNumContacts(); j++)
+        {
+			const btManifoldPoint& mp = manifold->getContactPoint(i);
+           	auto body0 = static_cast<EntityCollisionListener*>(manifold->getBody0()->getUserPointer());
+			auto body1 = static_cast<EntityCollisionListener*>(manifold->getBody1()->getUserPointer());
+			if(body0->listener)
+				body0->listener->contact(body1->entity, mp);
+			if(body1->listener)
+				body1->listener->contact(body0->entity, mp);
+        }
+    }
+}
+
+/// wrapper with automatic memory management
+class RigidBody
+{
+	btRigidBody* mBtBody;
+	btDynamicsWorld* mBtWorld;
+public:
+    RigidBody(btRigidBody* btBody, btDynamicsWorld* btWorld) : mBtBody(btBody), mBtWorld(btWorld) {}
+	~RigidBody()
+	{
+		mBtWorld->removeRigidBody(mBtBody);
+		delete (EntityCollisionListener*)mBtBody->getUserPointer();
+		delete mBtBody->getMotionState();
+		delete mBtBody->getCollisionShape();
+		delete mBtBody;
+	}
+
+	btRigidBody* getBtBody() const { return mBtBody; }
+};
+
 DynamicsWorld::DynamicsWorld(const Ogre::Vector3& gravity)
 {
 	//Bullet initialisation.
@@ -55,9 +100,10 @@ DynamicsWorld::DynamicsWorld(const Ogre::Vector3& gravity)
 	mBtWorld = new btDiscreteDynamicsWorld(mDispatcher.get(), mBroadphase.get(), mSolver.get(),
 											mCollisionConfig.get());
 	mBtWorld->setGravity(Convert::toBullet(gravity));
+	mBtWorld->setInternalTickCallback(onTick);
 }
 
-btRigidBody* DynamicsWorld::addRigidBody(float mass, const Ogre::Entity* ent, ColliderType ct)
+btRigidBody* DynamicsWorld::addRigidBody(float mass, const Ogre::Entity* ent, ColliderType ct, CollisionListener* listener)
 {
     auto node = ent->getParentSceneNode();
     RigidBodyState* state = new RigidBodyState(node);
@@ -85,6 +131,7 @@ btRigidBody* DynamicsWorld::addRigidBody(float mass, const Ogre::Entity* ent, Co
     
     auto rb = new btRigidBody(mass, state, cs, inertia);
     mBtWorld->addRigidBody(rb);
+	rb->setUserPointer(new EntityCollisionListener{ent, listener});
 
     // transfer ownership to node
     auto bodyWrapper = std::make_shared<RigidBody>(rb, mBtWorld);
@@ -96,14 +143,6 @@ btRigidBody* DynamicsWorld::addRigidBody(float mass, const Ogre::Entity* ent, Co
 DynamicsWorld::~DynamicsWorld()
 {
     delete mBtWorld;
-}
-
-RigidBody::~RigidBody()
-{
-    mBtWorld->removeRigidBody(mBtBody);
-    delete mBtBody->getMotionState();
-    delete mBtBody->getCollisionShape();
-    delete mBtBody;
 }
 
 /*
