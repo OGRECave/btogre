@@ -23,3 +23,11 @@
 }
 
 %include "BtOgre.h"
+
+// bullet subset
+#define SIMD_FORCE_INLINE
+#define ATTRIBUTE_ALIGNED16(a) a
+typedef float btScalar;
+%include "LinearMath/btVector3.h"
+%include "BulletCollision/NarrowPhaseCollision/btManifoldPoint.h"
+%include "BulletDynamics/Dynamics/btRigidBody.h"
