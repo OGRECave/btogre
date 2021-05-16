@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8.6)
 project(BtOgre)
 
 find_package(Bullet REQUIRED)
-find_package(OGRE 1.12 REQUIRED)
+find_package(OGRE REQUIRED CONFIG)
 
 option(BUILD_DEMO "build demo application" TRUE)
 
