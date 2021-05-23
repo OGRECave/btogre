@@ -231,6 +231,7 @@ public:
     DebugDrawer(Ogre::SceneNode* node, btDynamicsWorld* world)
         : mNode(node), mWorld(world), mLines(""), mDebugMode(DBG_DrawWireframe)
     {
+		mLines.setCastShadows(false);
         mNode->attachObject(&mLines);
 		mWorld->setDebugDrawer(this);
     }

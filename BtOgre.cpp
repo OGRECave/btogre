@@ -102,6 +102,7 @@ DynamicsWorld::DynamicsWorld(const Ogre::Vector3& gravity)
 btRigidBody* DynamicsWorld::addRigidBody(float mass, const Ogre::Entity* ent, ColliderType ct, CollisionListener* listener)
 {
     auto node = ent->getParentSceneNode();
+	OgreAssert(node, "entity must be attached");
     RigidBodyState* state = new RigidBodyState(node);
 
     btCollisionShape* cs = NULL;
