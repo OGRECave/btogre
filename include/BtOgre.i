@@ -30,4 +30,5 @@
 typedef float btScalar;
 %include "LinearMath/btVector3.h"
 %include "BulletCollision/NarrowPhaseCollision/btManifoldPoint.h"
+%include "BulletCollision/CollisionDispatch/btCollisionObject.h"
 %include "BulletDynamics/Dynamics/btRigidBody.h"
