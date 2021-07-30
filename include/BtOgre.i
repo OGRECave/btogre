@@ -2,6 +2,7 @@
 %module(directors="1") BtOgre
 %{
 #include "Ogre.h"
+#include "OgreUnifiedHighLevelGpuProgram.h"
 #include "BtOgre.h"
 %}
 
