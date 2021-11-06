@@ -239,7 +239,8 @@ public:
     void update()
     {
 		mWorld->debugDrawWorld();
-		mLines.end();
+		if(!mLines.getSections().empty()) // begin was called
+			mLines.end();
 	}
 
 	void drawLine(const btVector3& from,const btVector3& to,const btVector3& color);
