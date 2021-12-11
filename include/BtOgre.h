@@ -71,11 +71,14 @@ public:
 btSphereShape* createSphereCollider(const Ogre::MovableObject* mo);
 /// create box collider using ogre provided data
 btBoxShape* createBoxCollider(const Ogre::MovableObject* mo);
+/// create capsule collider using ogre provided data
+btCapsuleShape* createCapsuleCollider(const Ogre::MovableObject* mo);
 
 enum ColliderType
 {
 	CT_BOX,
 	CT_SPHERE,
+	CT_CAPSULE,
 	CT_TRIMESH,
 	CT_HULL
 };

@@ -40,6 +40,37 @@ btBoxShape* createBoxCollider(const Ogre::MovableObject* mo)
 	return shape;
 }
 
+btCapsuleShape* createCapsuleCollider(const Ogre::MovableObject* mo)
+{
+    OgreAssert(mo->getParentSceneNode(), "MovableObject must be attached");
+
+    auto sz = mo->getBoundingBox().getHalfSize();
+
+    btScalar height = std::max(sz.x, std::max(sz.y, sz.z));
+    btScalar radius;
+    btCapsuleShape* shape;
+    // Orient the capsule such that its height is aligned with the largest dimension.
+    if (height == sz.y)
+    {
+        radius = std::max(sz.x, sz.z);
+        shape = new btCapsuleShape(radius, 2 * height - 2 * radius);
+    }
+    else if (height == sz.x)
+    {
+        radius = std::max(sz.y, sz.z);
+        shape = new btCapsuleShapeX(radius, 2 * height - 2 * radius);
+    }
+    else
+    {
+        radius = std::max(sz.x, sz.y);
+        shape = new btCapsuleShapeZ(radius, 2 * height - 2 * radius);
+    }
+
+    shape->setLocalScaling(Convert::toBullet(mo->getParentSceneNode()->getScale()));
+
+    return shape;
+}
+
 struct EntityCollisionListener
 {
 	const Ogre::MovableObject* entity;
@@ -113,6 +144,9 @@ btRigidBody* DynamicsWorld::addRigidBody(float mass, const Ogre::Entity* ent, Co
         break;
     case CT_SPHERE:
         cs = createSphereCollider(ent);
+        break;
+	case CT_CAPSULE:
+		cs = createCapsuleCollider(ent);
         break;
     case CT_TRIMESH:
         cs = StaticMeshToShapeConverter(ent).createTrimesh();
@@ -495,13 +529,13 @@ DynamicsWorld::~DynamicsWorld()
 		if (height == sz.y)
 		{
 			radius = std::max(sz.x,sz.z);
-			shape = new btCapsuleShape(radius *0.5,height *0.5);
+			shape = new btCapsuleShape(radius *0.5,height - radius);
 		} else if (height == sz.x ) {
 			radius = std::max(sz.y,sz.z);
-			shape = new btCapsuleShapeX(radius *0.5,height *0.5);
+			shape = new btCapsuleShapeX(radius *0.5,height - radius);
 		} else {
 			radius = std::max(sz.x,sz.y);
-			shape = new btCapsuleShapeZ(radius *0.5,height *0.5);
+			shape = new btCapsuleShapeZ(radius *0.5,height - radius);
 		}
 
 		shape->setLocalScaling(Convert::toBullet(mScale));
