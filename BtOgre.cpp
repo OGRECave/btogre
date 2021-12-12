@@ -130,7 +130,8 @@ DynamicsWorld::DynamicsWorld(const Ogre::Vector3& gravity)
 	mBtWorld->setInternalTickCallback(onTick);
 }
 
-btRigidBody* DynamicsWorld::addRigidBody(float mass, const Ogre::Entity* ent, ColliderType ct, CollisionListener* listener)
+btRigidBody* DynamicsWorld::addRigidBody(float mass, const Ogre::Entity* ent, ColliderType ct,
+                                         CollisionListener* listener, int group, int mask)
 {
     auto node = ent->getParentSceneNode();
 	OgreAssert(node, "entity must be attached");
@@ -161,7 +162,7 @@ btRigidBody* DynamicsWorld::addRigidBody(float mass, const Ogre::Entity* ent, Co
         cs->calculateLocalInertia(mass, inertia);
     
     auto rb = new btRigidBody(mass, state, cs, inertia);
-    mBtWorld->addRigidBody(rb);
+    mBtWorld->addRigidBody(rb, group, mask);
 	rb->setUserPointer(new EntityCollisionListener{ent, listener});
 
     // transfer ownership to node
