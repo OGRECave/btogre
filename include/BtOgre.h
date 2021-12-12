@@ -108,7 +108,7 @@ public:
 	~DynamicsWorld();
 	DynamicsWorld(btDynamicsWorld* btWorld) : mBtWorld(btWorld) {}
 
-	btRigidBody* addRigidBody(float mass, const Ogre::Entity* ent, ColliderType ct, CollisionListener* listener = 0,
+	btRigidBody* addRigidBody(float mass, Ogre::Entity* ent, ColliderType ct, CollisionListener* listener = 0,
 								int group = 1, int mask = -1);
 
 	btDynamicsWorld* getBtWorld() const { return mBtWorld; }

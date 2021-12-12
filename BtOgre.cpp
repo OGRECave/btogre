@@ -130,12 +130,19 @@ DynamicsWorld::DynamicsWorld(const Ogre::Vector3& gravity)
 	mBtWorld->setInternalTickCallback(onTick);
 }
 
-btRigidBody* DynamicsWorld::addRigidBody(float mass, const Ogre::Entity* ent, ColliderType ct,
+btRigidBody* DynamicsWorld::addRigidBody(float mass, Ogre::Entity* ent, ColliderType ct,
                                          CollisionListener* listener, int group, int mask)
 {
     auto node = ent->getParentSceneNode();
 	OgreAssert(node, "entity must be attached");
     RigidBodyState* state = new RigidBodyState(node);
+
+	if(ent->hasSkeleton())
+	{
+		ent->addSoftwareAnimationRequest(false);
+		ent->_updateAnimation();
+		ent->setUpdateBoundingBoxFromSkeleton(true);
+	}
 
     btCollisionShape* cs = NULL;
     switch (ct)
@@ -156,6 +163,9 @@ btRigidBody* DynamicsWorld::addRigidBody(float mass, const Ogre::Entity* ent, Co
         cs = StaticMeshToShapeConverter(ent).createConvex();
         break;
     }
+
+	if(ent->hasSkeleton())
+		ent->removeSoftwareAnimationRequest(false);
 
     btVector3 inertia(0, 0, 0);
     if(mass != 0) // mass = 0 -> static
@@ -648,9 +658,16 @@ DynamicsWorld::~DynamicsWorld()
 		mTransform = transform;
 		mScale = mNode ? mNode->getScale() : Ogre::Vector3(1,1,1);
 
+		bool hasSkeleton = entity->hasSkeleton();
+
 		if (mEntity->getMesh()->sharedVertexData)
 		{
-			VertexIndexToShape::addStaticVertexData (mEntity->getMesh()->sharedVertexData);
+			if (hasSkeleton)
+				VertexIndexToShape::addAnimatedVertexData(mEntity->getMesh()->sharedVertexData,
+															mEntity->_getSkelAnimVertexData(),
+															&mEntity->getMesh()->sharedBlendIndexToBoneIndexMap);
+			else
+				VertexIndexToShape::addStaticVertexData(mEntity->getMesh()->sharedVertexData);
 		}
 
 		for (unsigned int i = 0;i < mEntity->getNumSubEntities();++i)
@@ -660,7 +677,13 @@ DynamicsWorld::~DynamicsWorld()
 			if (!sub_mesh->useSharedVertices)
 			{
 				VertexIndexToShape::addIndexData(sub_mesh->indexData, mVertexCount);
-				VertexIndexToShape::addStaticVertexData (sub_mesh->vertexData);
+
+				if (hasSkeleton)
+					VertexIndexToShape::addAnimatedVertexData(
+						sub_mesh->vertexData, mEntity->getSubEntity(i)->_getSkelAnimVertexData(),
+						&sub_mesh->blendIndexToBoneIndexMap);
+				else
+					VertexIndexToShape::addStaticVertexData(sub_mesh->vertexData);
 			}
 			else
 			{
