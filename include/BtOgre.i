@@ -13,6 +13,7 @@
 %import "Ogre.i"
 
 %feature("director") BtOgre::CollisionListener;
+%feature("director") BtOgre::RayResultCallback;
 
 // avoid wrapping BtWorld for now..
 %extend BtOgre::DynamicsWorld

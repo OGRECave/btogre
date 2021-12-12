@@ -89,6 +89,12 @@ struct CollisionListener
     virtual void contact(const Ogre::MovableObject* other, const btManifoldPoint& manifoldPoint) = 0;
 };
 
+struct RayResultCallback
+{
+	virtual ~RayResultCallback() {}
+    virtual void addSingleResult(const Ogre::MovableObject* other, float distance) = 0;
+};
+
 /// simplified wrapper with automatic memory management
 class DynamicsWorld
 {
@@ -106,6 +112,8 @@ public:
 								int group = 1, int mask = -1);
 
 	btDynamicsWorld* getBtWorld() const { return mBtWorld; }
+
+	void rayTest(const Ogre::Ray& ray, RayResultCallback* callback, float maxDist = 1000);
 };
 
 typedef std::vector<Ogre::Vector3> Vector3Array;

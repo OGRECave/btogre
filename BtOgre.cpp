@@ -172,6 +172,30 @@ btRigidBody* DynamicsWorld::addRigidBody(float mass, const Ogre::Entity* ent, Co
 	return rb;
 }
 
+struct RayResultCallbackWrapper : public btCollisionWorld::RayResultCallback
+{
+    BtOgre::RayResultCallback* mCallback;
+    float mMaxDistance;
+    RayResultCallbackWrapper(BtOgre::RayResultCallback* callback, float maxDist)
+        : mCallback(callback), mMaxDistance(maxDist)
+    {
+    }
+    btScalar addSingleResult(btCollisionWorld::LocalRayResult& rayResult, bool normalInWorldSpace) override
+    {
+        auto body0 = static_cast<const EntityCollisionListener*>(rayResult.m_collisionObject->getUserPointer());
+        mCallback->addSingleResult(body0->entity, rayResult.m_hitFraction * mMaxDistance);
+        return rayResult.m_hitFraction;
+    }
+};
+
+void DynamicsWorld::rayTest(const Ogre::Ray& ray, RayResultCallback* callback, float maxDist)
+{
+	RayResultCallbackWrapper wrapper(callback, maxDist);
+	btVector3 from = Convert::toBullet(ray.getOrigin());
+	btVector3 to = Convert::toBullet(ray.getPoint(maxDist));
+	mBtWorld->rayTest(from, to, wrapper);
+}
+
 DynamicsWorld::~DynamicsWorld()
 {
     delete mBtWorld;
