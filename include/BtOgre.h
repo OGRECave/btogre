@@ -73,11 +73,14 @@ btSphereShape* createSphereCollider(const Ogre::MovableObject* mo);
 btBoxShape* createBoxCollider(const Ogre::MovableObject* mo);
 /// create capsule collider using ogre provided data
 btCapsuleShape* createCapsuleCollider(const Ogre::MovableObject* mo);
+/// create capsule collider using ogre provided data
+btCylinderShape* createCylinderCollider(const Ogre::MovableObject* mo);
 
 enum ColliderType
 {
 	CT_BOX,
 	CT_SPHERE,
+	CT_CYLINDER,
 	CT_CAPSULE,
 	CT_TRIMESH,
 	CT_HULL
@@ -117,24 +120,24 @@ public:
 };
 
 typedef std::vector<Ogre::Vector3> Vector3Array;
-typedef std::map<unsigned char, Vector3Array*> BoneIndex;
+
 
 class VertexIndexToShape
 {
 public:
-	VertexIndexToShape(const Ogre::Matrix4 &transform = Ogre::Matrix4::IDENTITY);
+	VertexIndexToShape(const Ogre::Affine3 &transform = Ogre::Affine3::IDENTITY);
+	VertexIndexToShape(Ogre::Renderable *rend, const Ogre::Affine3 &transform = Ogre::Affine3::IDENTITY);
+	VertexIndexToShape(const Ogre::Entity *entity, const Ogre::Affine3 &transform = Ogre::Affine3::IDENTITY);
 	~VertexIndexToShape();
 
 	Ogre::Real getRadius();
 	Ogre::Vector3 getSize();
 
-
-	btSphereShape* createSphere();
-	btBoxShape* createBox();
 	btBvhTriangleMeshShape* createTrimesh();
-	btCylinderShape* createCylinder();
 	btConvexHullShape* createConvex();
-	btCapsuleShape* createCapsule();
+
+	void addEntity(const Ogre::Entity *entity,const Ogre::Affine3 &transform = Ogre::Affine3::IDENTITY);
+	void addMesh(const Ogre::MeshPtr &mesh, const Ogre::Affine3 &transform = Ogre::Affine3::IDENTITY);
 
 	const Ogre::Vector3* getVertices();
 	unsigned int getVertexCount();
@@ -161,75 +164,12 @@ protected:
 	Ogre::Vector3		mBounds;
 	Ogre::Real		    mBoundRadius;
 
+	typedef std::map<unsigned char, Vector3Array*> BoneIndex;
 	BoneIndex           *mBoneIndex;
 
-	Ogre::Matrix4		mTransform;
+	Ogre::Affine3		mTransform;
 
 	Ogre::Vector3		mScale;
-};
-
-//For static (non-animated) meshes.
-class StaticMeshToShapeConverter : public VertexIndexToShape
-{
-public:
-
-	StaticMeshToShapeConverter(Ogre::Renderable *rend, const Ogre::Matrix4 &transform = Ogre::Matrix4::IDENTITY);
-	StaticMeshToShapeConverter(const Ogre::Entity *entity,   const Ogre::Matrix4 &transform = Ogre::Matrix4::IDENTITY);
-	StaticMeshToShapeConverter();
-
-	~StaticMeshToShapeConverter();
-
-	void addEntity(const Ogre::Entity *entity,const Ogre::Matrix4 &transform = Ogre::Matrix4::IDENTITY);
-
-	void addMesh(const Ogre::MeshPtr &mesh, const Ogre::Matrix4 &transform = Ogre::Matrix4::IDENTITY);
-
-
-protected:
-
-	const Ogre::Entity* mEntity;
-	Ogre::SceneNode*	mNode;
-};
-
-//For animated meshes.
-class AnimatedMeshToShapeConverter : public VertexIndexToShape
-{
-public:
-
-	AnimatedMeshToShapeConverter(Ogre::Entity *entity, const Ogre::Matrix4 &transform = Ogre::Matrix4::IDENTITY);
-	AnimatedMeshToShapeConverter();
-	~AnimatedMeshToShapeConverter();
-
-	void addEntity(Ogre::Entity *entity,const Ogre::Matrix4 &transform = Ogre::Matrix4::IDENTITY);
-	void addMesh(const Ogre::MeshPtr &mesh, const Ogre::Matrix4 &transform);
-
-	btBoxShape* createAlignedBox(unsigned char bone,
-		const Ogre::Vector3 &bonePosition,
-		const Ogre::Quaternion &boneOrientation);
-
-	btBoxShape* createOrientedBox(unsigned char bone,
-		const Ogre::Vector3 &bonePosition,
-		const Ogre::Quaternion &boneOrientation);
-
-protected:
-
-	bool getBoneVertices(unsigned char bone,
-		unsigned int &vertex_count,
-		Ogre::Vector3* &vertices,
-		const Ogre::Vector3 &bonePosition);
-
-	bool getOrientedBox(unsigned char bone,
-		const Ogre::Vector3 &bonePosition,
-		const Ogre::Quaternion &boneOrientation,
-		Ogre::Vector3 &extents,
-		Ogre::Vector3 *axis,
-		Ogre::Vector3 &center);
-
-
-	Ogre::Entity*		mEntity;
-	Ogre::SceneNode*	mNode;
-
-	Ogre::Vector3       *mTransformedVerticesTemp;
-	size_t               mTransformedVerticesTempSize;
 };
 
 class DebugDrawer : public btIDebugDraw
