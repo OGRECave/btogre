@@ -1,5 +1,7 @@
 # BtOgre
 
+![](screenshot.webp)
+
 a simple Bullet-Ogre connection.
 
 CMake Options:
